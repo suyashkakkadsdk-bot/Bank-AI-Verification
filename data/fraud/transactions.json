@@ -1,0 +1,57 @@
+[
+  {
+    "transaction_id": "TXN001",
+    "customer_id": "CUS001",
+    "amount": 2500,
+    "timestamp": "2026-09-28T10:15:00",
+    "location": "Nagpur",
+    "device": "DEV001",
+    "merchant": "Amazon",
+    "previous_transaction_behaviour": "Normal",
+    "transaction_frequency": 3
+  },
+  {
+    "transaction_id": "TXN002",
+    "customer_id": "CUS002",
+    "amount": 85000,
+    "timestamp": "2026-09-28T02:30:00",
+    "location": "Delhi",
+    "device": "DEV099",
+    "merchant": "Unknown Merchant",
+    "previous_transaction_behaviour": "Low Value Transactions",
+    "transaction_frequency": 1
+  },
+  {
+    "transaction_id": "TXN003",
+    "customer_id": "CUS003",
+    "amount": 12000,
+    "timestamp": "2026-09-28T18:45:00",
+    "location": "Mumbai",
+    "device": "DEV003",
+    "merchant": "Flipkart",
+    "previous_transaction_behaviour": "Normal",
+    "transaction_frequency": 5
+  },
+  {
+    "transaction_id": "TXN004",
+    "customer_id": "CUS004",
+    "amount": 45000,
+    "timestamp": "2026-09-28T03:10:00",
+    "location": "Pune",
+    "device": "DEV404",
+    "merchant": "Unknown Merchant",
+    "previous_transaction_behaviour": "Unusual High Value Transactions",
+    "transaction_frequency": 1
+  },
+  {
+    "transaction_id": "TXN005",
+    "customer_id": "CUS005",
+    "amount": 3200,
+    "timestamp": "2026-09-28T11:20:00",
+    "location": "Nagpur",
+    "device": "DEV005",
+    "merchant": "Swiggy",
+    "previous_transaction_behaviour": "Normal",
+    "transaction_frequency": 4
+  }
+]

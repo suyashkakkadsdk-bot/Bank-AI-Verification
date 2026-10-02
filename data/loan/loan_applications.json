@@ -1,0 +1,38 @@
+[
+  {
+    "application_id": "LN001",
+    "applicant_id": "APP001",
+    "income": 60000,
+    "credit_score": 760,
+    "employment_status": "Salaried",
+    "existing_debt": 0,
+    "monthly_emi": 5000,
+    "loan_amount": 300000,
+    "loan_tenure": 36,
+    "repayment_history": "Good"
+  },
+  {
+    "application_id": "LN002",
+    "applicant_id": "APP002",
+    "income": 35000,
+    "credit_score": 610,
+    "employment_status": "Self-Employed",
+    "existing_debt": 250000,
+    "monthly_emi": 12000,
+    "loan_amount": 800000,
+    "loan_tenure": 60,
+    "repayment_history": "Poor"
+  },
+  {
+    "application_id": "LN003",
+    "applicant_id": "APP003",
+    "income": 45000,
+    "credit_score": 720,
+    "employment_status": "Salaried",
+    "existing_debt": 50000,
+    "monthly_emi": 4000,
+    "loan_amount": 250000,
+    "loan_tenure": 36,
+    "repayment_history": "Good"
+  }
+]
