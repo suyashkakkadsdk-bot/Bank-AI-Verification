@@ -1,0 +1,25 @@
+BANK ACCOUNT SERVICES
+
+Savings Account
+
+A savings account is used for regular personal banking needs such as depositing money, withdrawing money, transferring funds, and receiving payments.
+
+Account Opening
+
+To open a savings account, a customer must provide the required identity and address documents according to the bank's applicable account-opening requirements.
+
+Account Closure
+
+A customer can request closure of a savings account by following the bank's account closure procedure. Any applicable outstanding charges or requirements must be completed before closure.
+
+Balance Inquiry
+
+Customers can check their account balance through supported banking channels such as internet banking, mobile banking, ATM services, or branch services.
+
+Fund Transfer
+
+Customers can transfer funds through supported banking channels. Transactions may be subject to applicable limits, verification requirements, and bank rules.
+
+Important
+
+Banking responses should be based only on verified bank information and applicable rules. If required information is unavailable, the AI should not invent an answer.
