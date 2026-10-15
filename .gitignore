@@ -38,3 +38,11 @@ htmlcov/
 # Temporary files
 *.tmp
 *.temp
+
+# Admin/recovery scripts (prevent accidental commit)
+/recover_admin_password.py
+/add_password_change_required.py
+/fix_*.py
+/diagnostic_*.py
+/check_*.py
+/clean_*.py
