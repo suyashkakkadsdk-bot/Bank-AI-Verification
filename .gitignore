@@ -56,7 +56,24 @@ venv312/
 __pycache__/
 *.py[cod]
 
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
 # Local test artifacts
-_check_backend.py
-_test_create.py
-frontend/login_result.png
+/_check_backend.py
+/_test_create.py
+/frontend/login_result.png
+
+# Recovery and diagnostic scripts
+/recover_admin_password.py
+/add_password_change_required.py
+/fix_*.py
+/diagnostic_*.py
+/check_*.py
+/clean_*.py
+
+# Test/build artifacts
+.pytest_cache/
+htmlcov/
