@@ -21,16 +21,26 @@ const NAV_ITEMS = [
   { path: '/history', label: 'Verification History', icon: History },
 ];
 
-const ADMIN_NAV_ITEMS = [
-  { path: '/admin/policies', label: 'Policy Management', icon: Shield },
-];
+const MANAGER_NAV = {
+  path: '/admin/manager',
+  label: 'Manager',
+  icon: Shield,
+};
+
+const hasManagerAccess = (user) => {
+  const role = user?.role || 'employee';
+  return role === 'admin' || role === 'manager';
+};
 
 export const Sidebar = () => {
   const { isAuthenticated, user, logout, passwordChangeRequired } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
-  const navItems = isAuthenticated ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS] : NAV_ITEMS;
+  const navItems = [...NAV_ITEMS];
+  if (isAuthenticated && hasManagerAccess(user)) {
+    navItems.push(MANAGER_NAV);
+  }
 
   return (
     <aside
@@ -102,38 +112,39 @@ export const Sidebar = () => {
 
       <nav style={{ flex: 1, padding: '1rem', overflowY: 'auto' }}>
         <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path ||
-              (item.path !== '/' && location.pathname.startsWith(item.path));
-            const Icon = item.icon;
-            return (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive: active }) => `nav-link ${active ? 'active' : ''}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: collapsed ? 0 : '0.875rem',
-                    padding: '0.75rem 1rem',
-                    borderRadius: 'var(--radius-md)',
-                    color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                    textDecoration: 'none',
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    transition: 'all var(--transition-fast)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    justifyContent: collapsed ? 'center' : 'flex-start',
-                  }}
-                  aria-current={isActive ? 'page' : undefined}
-                >
-                  <Icon size={20} style={{ flexShrink: 0 }} />
-                  {!collapsed && <span>{item.label}</span>}
-                </NavLink>
-              </li>
-            );
-          })}
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path ||
+                (item.path !== '/' && location.pathname.startsWith(item.path));
+              const Icon = item.icon;
+
+              return (
+                <li key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive: active }) => `nav-link ${active ? 'active' : ''}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: collapsed ? 0 : '0.875rem',
+                      padding: '0.75rem 1rem',
+                      borderRadius: 'var(--radius-md)',
+                      color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                      textDecoration: 'none',
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      transition: 'all var(--transition-fast)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      justifyContent: collapsed ? 'center' : 'flex-start',
+                    }}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    <Icon size={20} style={{ flexShrink: 0 }} />
+                    {!collapsed && <span>{item.label}</span>}
+                  </NavLink>
+                </li>
+              );
+            })}
         </ul>
 
         {isAuthenticated && (

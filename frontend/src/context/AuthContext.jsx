@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getAuthToken, setAuthToken, clearAuthToken, adminApi } from '../api/client';
+import { clearAuthSession, setAuthToken, adminApi } from '../api/client';
 
 const AuthContext = createContext(null);
 
@@ -23,10 +23,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback(async (username, password) => {
     const response = await adminApi.login({ username, password });
-    const { token, password_change_required } = response.data;
+    const { token, password_change_required, role } = response.data;
 
     setAuthToken(token);
-    const userData = { username };
+    const userData = { username, role };
     setUser(userData);
     setPasswordChangeRequired(password_change_required);
 
@@ -34,16 +34,13 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.setItem('verify_user', JSON.stringify(userData));
     sessionStorage.setItem('verify_pcr', password_change_required.toString());
 
-    return { token, password_change_required };
+    return { token, password_change_required, role };
   }, []);
 
   const logout = useCallback(() => {
-    clearAuthToken();
+    clearAuthSession();
     setUser(null);
     setPasswordChangeRequired(false);
-    sessionStorage.removeItem('verify_token');
-    sessionStorage.removeItem('verify_user');
-    sessionStorage.removeItem('verify_pcr');
   }, []);
 
   const changePassword = useCallback(async (currentPassword, newPassword) => {

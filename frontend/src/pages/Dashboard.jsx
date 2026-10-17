@@ -1,18 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Search, Shield, BarChart3, TrendingUp, CheckCircle, AlertCircle, History } from 'lucide-react';
 import { healthApi } from '../api/client';
-import { formatNumber, formatCurrency } from '../utils/formatters';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    total: 0,
-    verified: 0,
-    review: 0,
-    highRisk: 0,
-  });
-  const [loading, setLoading] = useState(false);
   const [backendConnected, setBackendConnected] = useState(null);
 
   useEffect(() => {
@@ -116,56 +108,68 @@ export const Dashboard = () => {
         )}
 
         <div className="section">
-          <h2 className="section-title">Summary</h2>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon total">
-                <BarChart3 />
-              </div>
-              <div className="stat-content">
-                <div className="stat-value">{formatNumber(stats.total)}</div>
-                <div className="stat-label">Total Verifications</div>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon verified">
-                <CheckCircle />
-              </div>
-              <div className="stat-content">
-                <div className="stat-value">{formatNumber(stats.verified)}</div>
-                <div className="stat-label">Verified Cases</div>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon review">
-                <AlertCircle />
-              </div>
-              <div className="stat-content">
-                <div className="stat-value">{formatNumber(stats.review)}</div>
-                <div className="stat-label">Needs Human Review</div>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon high-risk">
-                <TrendingUp />
-              </div>
-              <div className="stat-content">
-                <div className="stat-value">{formatNumber(stats.highRisk)}</div>
-                <div className="stat-label">High Risk Cases</div>
-              </div>
-            </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '0.5rem',
+            marginBottom: '2rem',
+          }}>
+            <h2 className="section-title" style={{ width: '100%', textAlign: 'center' }}>Intelligent Banking Verification</h2>
+            <p className="page-subtitle" style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
+              Independent AI assessment. Configurable verification rules. Human oversight.
+            </p>
           </div>
 
-          <div className="empty-state" style={{ padding: '3rem 2rem' }}>
-            <div className="empty-state-icon">
-              <BarChart3 size={48} />
-            </div>
-            <h3 className="empty-state-title">Statistics Not Available</h3>
-            <p className="empty-state-text">
-              The backend does not currently expose a dashboard statistics or verification
-              history endpoint. These summary cards will populate once the backend provides
-              aggregate data.
-            </p>
+          <div className="features-grid">
+            <FeatureCard
+              title="Loan Verification"
+              description="Evaluate loan applications through independent AI assessment and a configurable verification engine. Identify decision mismatches and flag cases requiring human review."
+              icon={<LoanIcon />}
+              label="AI-Powered Assessment"
+              labelColor="var(--brand-primary)"
+              labelBg="var(--brand-light)"
+              buttonText="Verify Loan"
+              onButtonClick={() => navigate('/loan')}
+              cardColor="var(--brand-primary)"
+              iconBg="var(--brand-light)"
+              iconColor="var(--brand-primary)"
+            />
+
+            <FeatureCard
+              title="Fraud Detection"
+              description="Assess transaction risk, identify potentially suspicious activity, and highlight cases that may require additional investigation."
+              icon={<FraudIcon />}
+              label="Transaction Risk Analysis"
+              labelColor="#0d9488"
+              labelBg="#ccfbf1"
+              buttonText="Detect Fraud"
+              onButtonClick={() => navigate('/fraud')}
+              cardColor="var(--brand-primary)"
+              iconBg="#ccfbf1"
+              iconColor="#0d9488"
+            />
+          </div>
+        </div>
+
+        <div className="section">
+          <h2 className="section-title">How VeriFy Works</h2>
+          <div className="workflow-strip">
+            <WorkflowStep
+              number="01"
+              title="Submit"
+              description="Provide loan application or transaction details."
+            />
+            <WorkflowStep
+              number="02"
+              title="Assess"
+              description="Run the relevant assessment and verification rules."
+            />
+            <WorkflowStep
+              number="03"
+              title="Review"
+              description="Present the verification outcome and flag cases requiring human review."
+            />
           </div>
         </div>
 
@@ -210,3 +214,57 @@ export const Dashboard = () => {
     </div>
   );
 };
+
+const FeatureCard = ({ title, description, icon, label, labelColor, labelBg, buttonText, onButtonClick, cardColor, iconBg, iconColor }) => (
+  <div className="feature-card" style={{ borderTop: `4px solid ${cardColor}` }}>
+    <div className="feature-card-icon" style={{
+      background: iconBg,
+      color: iconColor,
+    }}>
+      {icon}
+    </div>
+    <div className="feature-card-body">
+      <div className="feature-card-label" style={{
+        color: labelColor,
+        background: labelBg,
+      }}>{label}</div>
+      <h3 className="feature-card-title">{title}</h3>
+      <p className="feature-card-description">{description}</p>
+    </div>
+    <button
+      className="btn btn-primary"
+      onClick={onButtonClick}
+      style={{ margin: '0 1.5rem 1.5rem' }}
+    >
+      {buttonText}
+    </button>
+  </div>
+);
+
+const WorkflowStep = ({ number, title, description }) => (
+  <div className="workflow-step">
+    <div className="workflow-number">{number}</div>
+    <div className="workflow-content">
+      <div className="workflow-title">{title}</div>
+      <div className="workflow-description">{description}</div>
+    </div>
+  </div>
+);
+
+const LoanIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2a4 4 0 0 1 4 4v4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2h4a4 4 0 0 0 4-4V6a2 2 0 0 1 2-2h2z" />
+    <path d="M4 20h16" />
+    <path d="M9 10h6" />
+    <circle cx="8" cy="17" r="1" />
+    <circle cx="16" cy="17" r="1" />
+  </svg>
+);
+
+const FraudIcon = () => (
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 21.36l-1.41-1.41C5.69 15.5 2 12.03 2 7.5 2 4.42 4.42 2 7.5 2c2.17 0 4.17.83 5.66 2.16L15 6l.59-.59C16.83 4.83 18.83 4 21 4c3.08 0 5.5 2.42 5.5 5.5 0 4.53-3.69 8-8.59 12.96L12 21.36z" />
+    <path d="M9 9h6v6H9z" />
+    <line x1="12" y1="6" x2="12" y2="12" />
+  </svg>
+);

@@ -5,6 +5,8 @@ Handles: verification rules loading, admin authentication, audit logging.
 """
 import json
 import bcrypt
+import secrets
+import string
 from typing import Dict, List, Optional, Any
 from pathlib import Path
 
@@ -178,16 +180,19 @@ def verify_admin(username: str, password: str) -> Optional[Dict[str, Any]]:
         conn.close()
         
         if not row:
+            print("verify_admin: ADMIN_RECORD_NOT_FOUND_OR_INACTIVE")
             return None
         
         admin_id, username, password_hash, role, is_active, password_change_required = row
         
         if not bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8')):
+            print("verify_admin: BCRYPT_PASSWORD_MISMATCH")
             return None
         
         return {"id": admin_id, "username": username, "role": role, "password_change_required": password_change_required}
         
-    except Exception:
+    except Exception as e:
+        print(f"verify_admin: EXCEPTION_OCCURRED {type(e).__name__}")
         return None
 
 
@@ -275,6 +280,296 @@ def update_admin_login(admin_id: int) -> bool:
         return True
     except Exception:
         return False
+
+
+def get_admin_by_id(admin_id: int) -> Optional[Dict[str, Any]]:
+    """Get admin by ID with fresh role and status check. Returns admin dict or None."""
+    try:
+        conn = _get_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT id, username, password_hash, role, is_active, password_change_required
+            FROM admins 
+            WHERE id = %s
+        """, (admin_id,))
+        row = cur.fetchone()
+        
+        cur.close()
+        conn.close()
+        
+        if not row:
+            return None
+        
+        admin_id, username, password_hash, role, is_active, password_change_required = row
+        
+        if not is_active:
+            return None
+        
+        return {"id": admin_id, "username": username, "role": role, "password_change_required": password_change_required}
+        
+    except Exception:
+        return None
+
+
+# ============================================================
+# EMPLOYEE MANAGEMENT
+# ============================================================
+
+
+def list_employees() -> List[Dict[str, Any]]:
+    """List all employee accounts (role='employee')."""
+    try:
+        conn = _get_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT id, username, role, is_active, password_change_required, created_at, created_by_admin_id, last_login
+            FROM admins 
+            WHERE role = 'employee'
+            ORDER BY id
+        """)
+        
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return [
+            {
+                "id": r[0],
+                "username": r[1],
+                "role": r[2],
+                "is_active": r[3],
+                "password_change_required": r[4],
+                "created_at": r[5].isoformat() if r[5] else None,
+                "created_by_admin_id": r[6],
+                "last_login": r[7].isoformat() if r[7] else None,
+            }
+            for r in rows
+        ]
+    except Exception:
+        return []
+
+
+def get_employee_by_id(employee_id: int) -> Optional[Dict[str, Any]]:
+    """Get employee by ID. Only returns employees (role='employee')."""
+    try:
+        conn = _get_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT id, username, password_hash, role, is_active, password_change_required, created_at, created_by_admin_id, last_login
+            FROM admins 
+            WHERE id = %s AND role = 'employee'
+        """, (employee_id,))
+        row = cur.fetchone()
+        
+        cur.close()
+        conn.close()
+        
+        if not row:
+            return None
+        
+        emp_id, username, password_hash, role, is_active, password_change_required, created_at, created_by_admin_id, last_login = row
+        
+        return {
+            "id": emp_id,
+            "username": username,
+            "role": role,
+            "is_active": is_active,
+            "password_change_required": password_change_required,
+            "created_at": created_at.isoformat() if created_at else None,
+            "created_by_admin_id": created_by_admin_id,
+            "last_login": last_login.isoformat() if last_login else None,
+        }
+    except Exception:
+        return None
+
+
+def create_employee(admin_id: int, username: str, password: str) -> tuple[bool, str, Optional[Dict[str, Any]]]:
+    """Create a new employee account. Returns (success, message, employee_data)."""
+    try:
+        conn = _get_connection()
+        cur = conn.cursor()
+        
+        # Check if username already exists
+        cur.execute("SELECT id FROM admins WHERE username = %s", (username,))
+        if cur.fetchone():
+            return False, "Username already exists", None
+        
+        # Generate a secure temporary password
+        temp_password = _generate_secure_password()
+        password_hash = bcrypt.hashpw(temp_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        cur.execute("""
+            INSERT INTO admins (username, password_hash, role, password_change_required, created_by_admin_id)
+            VALUES (%s, %s, 'employee', true, %s)
+            RETURNING id, username, role, created_at, created_by_admin_id, last_login
+        """, (username, password_hash, admin_id))
+        
+        row = cur.fetchone()
+        if not row:
+            conn.rollback()
+            return False, "Failed to create employee", None
+        
+        emp_id, username, role, created_at, created_by_admin_id, last_login = row
+        
+        # Audit log
+        cur.execute("""
+            INSERT INTO policy_audit_log (admin_id, action, rule_id, old_parameters, new_parameters)
+            VALUES (%s, 'EMPLOYEE_CREATE', NULL, %s, %s)
+        """, (admin_id, json.dumps({}), json.dumps({"username": username, "role": "employee"})))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        employee_data = {
+            "id": row[0],
+            "username": row[1],
+            "role": row[2],
+            "created_at": row[3].isoformat() if row[3] else None,
+            "created_by_admin_id": row[4],
+            "last_login": row[5].isoformat() if row[5] else None,
+        }
+        
+        return True, "Employee created successfully", employee_data
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return False, f"Employee creation failed: {e}", None
+
+
+def update_employee_status(admin_id: int, employee_id: int, is_active: bool) -> tuple[bool, str]:
+    """Activate or deactivate an employee account."""
+    try:
+        conn = _get_connection()
+        cur = conn.cursor()
+        
+        # Verify employee exists and is an employee (not admin/manager)
+        cur.execute("SELECT id, username, is_active FROM admins WHERE id = %s AND role = 'employee'", (employee_id,))
+        row = cur.fetchone()
+        
+        if not row:
+            return False, "Employee not found"
+        
+        current_active = row[2]
+        if current_active == is_active:
+            return False, f"Employee is already {'active' if is_active else 'inactive'}"
+        
+        cur.execute("UPDATE admins SET is_active = %s WHERE id = %s AND role = 'employee'", (is_active, employee_id))
+        
+        if cur.rowcount == 0:
+            return False, "Employee not found"
+        
+        # Audit log
+        action = 'EMPLOYEE_ACTIVATE' if is_active else 'EMPLOYEE_DEACTIVATE'
+        cur.execute("""
+            INSERT INTO policy_audit_log (admin_id, action, rule_id, old_parameters, new_parameters)
+            VALUES (%s, %s, NULL, %s, %s)
+        """, (admin_id, action, json.dumps({"is_active": not is_active}), json.dumps({"is_active": is_active})))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return True, f"Employee {'activated' if is_active else 'deactivated'} successfully"
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return False, f"Status update failed: {e}"
+
+
+def reset_employee_password(admin_id: int, employee_id: int) -> tuple[bool, str, Optional[str]]:
+    """Reset employee password to a new temporary password. Returns (success, message, temporary_password)."""
+    try:
+        conn = _get_connection()
+        cur = conn.cursor()
+        
+        # Verify employee exists
+        cur.execute("SELECT id, username FROM admins WHERE id = %s AND role = 'employee'", (employee_id,))
+        row = cur.fetchone()
+        
+        if not row:
+            return False, "Employee not found", None
+        
+        emp_id, username = row
+        
+        # Generate new temporary password
+        temp_password = _generate_secure_password()
+        password_hash = bcrypt.hashpw(temp_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        cur.execute("""
+            UPDATE admins 
+            SET password_hash = %s, password_change_required = true 
+            WHERE id = %s AND role = 'employee'
+        """, (password_hash, employee_id))
+        
+        if cur.rowcount == 0:
+            return False, "Employee not found", None
+        
+        # Audit log
+        cur.execute("""
+            INSERT INTO policy_audit_log (admin_id, action, rule_id, old_parameters, new_parameters)
+            VALUES (%s, 'EMPLOYEE_PASSWORD_RESET', NULL, %s, %s)
+        """, (admin_id, json.dumps({}), json.dumps({"username": username})))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return True, "Password reset successfully", temp_password
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return False, f"Password reset failed: {e}", None
+
+
+def delete_employee(admin_id: int, employee_id: int) -> tuple[bool, str]:
+    """Soft delete an employee account (deactivate and mark for deletion). 
+    Hard delete is not supported to preserve audit history."""
+    try:
+        conn = _get_connection()
+        cur = conn.cursor()
+        
+        # Verify employee exists and is an employee (not admin/manager)
+        cur.execute("SELECT id, username, role FROM admins WHERE id = %s AND role = 'employee'", (employee_id,))
+        row = cur.fetchone()
+        
+        if not row:
+            return False, "Employee not found"
+        
+        # Soft delete: deactivate the account
+        cur.execute("UPDATE admins SET is_active = false WHERE id = %s AND role = 'employee'", (employee_id,))
+        
+        if cur.rowcount == 0:
+            return False, "Employee not found"
+        
+        # Audit log
+        cur.execute("""
+            INSERT INTO policy_audit_log (admin_id, action, rule_id, old_parameters, new_parameters)
+            VALUES (%s, 'EMPLOYEE_DELETE', NULL, %s, %s)
+        """, (admin_id, json.dumps({}), json.dumps({"employee_id": employee_id})))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return True, "Employee deleted (deactivated) successfully"
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return False, f"Delete failed: {e}"
+
+
+def _generate_secure_password(length: int = 12) -> str:
+    """Generate a cryptographically secure random password."""
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
 # ============================================================
@@ -572,9 +867,9 @@ TOKEN_SECRET = _get_token_secret()
 TOKEN_EXPIRY_SECONDS = 3600  # 1 hour
 
 
-def create_token(admin_id: int, username: str, password_change_required: bool = False) -> str:
+def create_token(admin_id: int, username: str, role: str, password_change_required: bool = False) -> str:
     """Create simple HMAC-signed token with expiry."""
-    payload = f"{admin_id}:{username}:{int(password_change_required)}:{int(time.time()) + TOKEN_EXPIRY_SECONDS}"
+    payload = f"{admin_id}:{username}:{role}:{int(password_change_required)}:{int(time.time()) + TOKEN_EXPIRY_SECONDS}"
     signature = hmac.new(
         TOKEN_SECRET.encode(), 
         payload.encode(), 
@@ -585,7 +880,9 @@ def create_token(admin_id: int, username: str, password_change_required: bool = 
 
 
 def verify_token(token: str) -> Optional[Dict[str, Any]]:
-    """Verify token and return admin info if valid."""
+    """Verify token and return admin info if valid. Only accepts new 5-part token format.
+    Old 4-part tokens are rejected to enforce re-login and ensure database role is authoritative.
+    """
     try:
         decoded = base64.b64decode(token).decode()
         parts = decoded.rsplit(":", 1)
@@ -602,10 +899,18 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
         if not hmac.compare_digest(signature, expected_sig):
             return None
         
-        admin_id_str, username, pcr_str, expiry_str = payload.split(":")
+        payload_parts = payload.split(":")
+        if len(payload_parts) != 5:
+            # Reject old 4-part tokens (admin_id:username:pcr:expiry) to enforce re-login
+            # and ensure database role is always authoritative.
+            return None
+        
+        # New format: admin_id:username:role:pcr:expiry
+        admin_id_str, username, role, pcr_str, expiry_str = payload_parts
+        
         if int(time.time()) > int(expiry_str):
             return None  # Expired
         
-        return {"admin_id": int(admin_id_str), "username": username, "password_change_required": pcr_str == "1"}
+        return {"admin_id": int(admin_id_str), "username": username, "role": role, "password_change_required": pcr_str == "1"}
     except Exception:
         return None

@@ -12,7 +12,8 @@ import { VerificationHistory } from './pages/VerificationHistory';
 import { AdminLogin } from './pages/AdminLogin';
 import { ChangePassword } from './pages/ChangePassword';
 import { PolicyManagement } from './pages/PolicyManagement';
-import { healthApi } from './api/client';
+import { EmployeeManagement } from './pages/EmployeeManagement';
+import { ManagerPanel } from './pages/ManagerPanel';
 import './styles/global.css';
 
 function App() {
@@ -20,30 +21,37 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
-          <Routes>
-            <Route element={<PublicOnlyRoute />}>
-              <Route element={<AuthLayout />}>
-                <Route path="/login" element={<AdminLogin />} />
-              </Route>
-            </Route>
+           <Routes>
+             <Route element={<PublicOnlyRoute />}>
+               <Route element={<AuthLayout />}>
+                 <Route path="/login" element={<AdminLogin />} />
+               </Route>
+             </Route>
 
-            <Route element={<ProtectedRoute />}>
-              <Route element={<AuthLayout />}>
-                <Route path="/admin/change-password" element={<ChangePassword />} />
-              </Route>
-              <Route element={<MainLayout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/loan" element={<LoanVerification />} />
-                <Route path="/fraud" element={<FraudDetection />} />
-                <Route path="/result" element={<VerificationResult />} />
-                <Route path="/history" element={<VerificationHistory />} />
-                <Route path="/admin/policies" element={<PolicyManagement />} />
-              </Route>
-            </Route>
+             <Route element={<ProtectedRoute />}>
+               <Route element={<AuthLayout />}>
+                 <Route path="/admin/change-password" element={<ChangePassword />} />
+               </Route>
+               <Route element={<MainLayout />}>
+                 <Route path="/" element={<Dashboard />} />
+                 <Route path="/loan" element={<LoanVerification />} />
+                 <Route path="/fraud" element={<FraudDetection />} />
+                 <Route path="/result" element={<VerificationResult />} />
+                 <Route path="/history" element={<VerificationHistory />} />
+               </Route>
+             </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-          <ToastContainer />
+              <Route element={<ProtectedRoute requiredRole="manager" />}>
+                <Route element={<MainLayout />}>
+                  <Route path="/admin/manager" element={<ManagerPanel />} />
+                  <Route path="/admin/employees" element={<EmployeeManagement />} />
+                  <Route path="/admin/policies" element={<PolicyManagement />} />
+                </Route>
+              </Route>
+
+             <Route path="*" element={<Navigate to="/" replace />} />
+           </Routes>
+           <ToastContainer />
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

@@ -28,6 +28,13 @@ export const clearAuthToken = () => {
   delete apiClient.defaults.headers.common['Authorization'];
 };
 
+export const clearAuthSession = () => {
+  clearAuthToken();
+  sessionStorage.removeItem('verify_token');
+  sessionStorage.removeItem('verify_user');
+  sessionStorage.removeItem('verify_pcr');
+};
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -35,9 +42,12 @@ apiClient.interceptors.response.use(
       const status = error.response.status;
 
       if (status === 401) {
-        clearAuthToken();
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login?session=expired';
+        const isLoginRequest = error.config?.url?.includes('/admin/login');
+        if (!isLoginRequest) {
+          clearAuthSession();
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login?session=expired';
+          }
         }
       }
 
@@ -105,6 +115,14 @@ export const adminApi = {
   updateRule: (id, data) => apiClient.put(`/admin/rules/${id}`, data),
   deleteRule: (id) => apiClient.delete(`/admin/rules/${id}`),
   getAuditLog: (limit = 100) => apiClient.get('/admin/audit-log', { params: { limit } }),
+  // Employee management
+  listEmployees: () => apiClient.get('/admin/employees'),
+  createEmployee: (data) => apiClient.post('/admin/employees', data),
+  getEmployee: (id) => apiClient.get(`/admin/employees/${id}`),
+  activateEmployee: (id) => apiClient.put(`/admin/employees/${id}/activate`),
+  deactivateEmployee: (id) => apiClient.put(`/admin/employees/${id}/deactivate`),
+  resetEmployeePassword: (id) => apiClient.put(`/admin/employees/${id}/reset-password`),
+  deleteEmployee: (id) => apiClient.delete(`/admin/employees/${id}`),
 };
 
 export const healthApi = {

@@ -37,7 +37,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
         previousActiveElement.current?.focus();
       };
     }
-  }, [isOpen, onClose]);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isOpen) return null;
 

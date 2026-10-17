@@ -52,15 +52,10 @@ export const ChangePassword = () => {
     setSubmitting(true);
 
     try {
-      await adminApi.changePassword({
-        current_password: currentPassword,
-        new_password: newPassword,
-      });
-
       await changePassword(currentPassword, newPassword);
 
       toast.success('Password changed successfully', 'Security Update');
-      navigate('/admin/policies');
+      navigate('/');
     } catch (err) {
       const message = handleApiError(err);
       setErrors({ submit: message });
