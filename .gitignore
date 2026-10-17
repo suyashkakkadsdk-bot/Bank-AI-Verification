@@ -9,7 +9,8 @@ venv/
 
 # Environment variables / secrets
 .env
-.env.*
+.env.local
+.env.*.local
 
 # IDE
 .vscode/
@@ -46,3 +47,16 @@ htmlcov/
 /diagnostic_*.py
 /check_*.py
 /clean_*.py
+# Python virtual environments
+venv/
+venv312/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local test artifacts
+_check_backend.py
+_test_create.py
+frontend/login_result.png
